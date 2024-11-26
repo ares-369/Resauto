@@ -4,7 +4,7 @@
 CSV_FILE="cheri_memory_anomalies.csv"
 
 # Initialize the CSV file with headers
-if [[ ! -f "$CSV_FILE" ]]; then
+if [ ! -f "$CSV_FILE" ]; then
     echo "Timestamp,CPU_Usage(%),Memory_Usage(MB),Memory_Anomalies,Error_Logs" > "$CSV_FILE"
 fi
 
@@ -23,7 +23,7 @@ get_memory_usage() {
 # Function to detect memory anomalies
 detect_memory_access_anomalies() {
     ANOMALIES=$(dmesg | grep -i "capability fault" | tail -n 1)
-    if [[ -z "$ANOMALIES" ]]; then
+    if [ -z "$ANOMALIES" ]; then
         echo "No anomalies detected"
     else
         echo "$ANOMALIES"
@@ -33,7 +33,7 @@ detect_memory_access_anomalies() {
 # Function to fetch error logs
 get_error_logs() {
     ERROR_LOG=$(dmesg | tail -n 1)
-    if [[ -z "$ERROR_LOG" ]]; then
+    if [ -z "$ERROR_LOG" ]; then
         echo "No errors detected"
     else
         echo "$ERROR_LOG"
