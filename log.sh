@@ -5,7 +5,7 @@ CSV_FILE="cheri_combined_logs.csv"
 
 # Initialize the CSV file with headers
 if [ ! -f "$CSV_FILE" ]; then
-    echo "Timestamp,CPU_Usage(%),Memory_Usage(MB),Memory_Anomalies,Error_Logs,Memory_Access_Patterns,Attack_Start,Attack_End,Duration(s),Targeted_PID,Targeted_Memory_Regions,Attack_Outcome" > "$CSV_FILE"
+    echo "Timestamp,CPU_Usage(%),Memory_Usage(MB),Memory_Anomalies,Error_Logs,Memory_Access_Patterns,Targeted_PID,Targeted_Memory_Regions,Attack_Outcome" > "$CSV_FILE"
 fi
 
 # Variables to track state
@@ -46,7 +46,7 @@ monitor_memory_access_patterns() {
     PID=$(pgrep abs)  # Replace "abs" with your target process name
     if [ -n "$PID" ]; then
         ktrace -p "$PID"
-        sleep 1
+        sleep 0.5
         kdump | grep -E 'read|write' | tail -n 1 || echo "No access patterns detected"
     else
         echo "No target process found"
@@ -85,28 +85,22 @@ while true; do
     if [ "$CURRENT_PID" != "$LAST_PID" ]; then
         # PID change indicates a restart or new process instance
         if [ -n "$CURRENT_PID" ]; then
-            ATTACK_START="$TIMESTAMP"
             ATTACK_OUTCOME="Process Restarted"
             TARGETED_MEMORY_REGIONS=$(fetch_memory_regions "$CURRENT_PID")
             LAST_PID="$CURRENT_PID"
         else
-            ATTACK_START="N/A"
             ATTACK_OUTCOME="Process Stopped"
             TARGETED_MEMORY_REGIONS="N/A"
         fi
     else
-        ATTACK_START="N/A"
         ATTACK_OUTCOME="No Impact"
         TARGETED_MEMORY_REGIONS="N/A"
     fi
 
-    # Log to CSV only when there is a new error or meaningful change
-    if [ "$ERROR_LOGS" != "$LAST_ERROR_LOG" ] || [ "$ATTACK_OUTCOME" != "No Impact" ]; then
-        echo "$TIMESTAMP,$CPU_USAGE,$MEMORY_USAGE,\"$MEMORY_ANOMALIES\",\"$ERROR_LOGS\",\"$MEMORY_ACCESS_PATTERNS\",\"$ATTACK_START\",\"N/A\",\"N/A\",\"$CURRENT_PID\",\"$TARGETED_MEMORY_REGIONS\",\"$ATTACK_OUTCOME\"" >> "$CSV_FILE"
-        LAST_ERROR_LOG="$ERROR_LOGS"
-    fi
+    # Log to CSV
+    echo "$TIMESTAMP,$CPU_USAGE,$MEMORY_USAGE,\"$MEMORY_ANOMALIES\",\"$ERROR_LOGS\",\"$MEMORY_ACCESS_PATTERNS\",\"$CURRENT_PID\",\"$TARGETED_MEMORY_REGIONS\",\"$ATTACK_OUTCOME\"" >> "$CSV_FILE"
 
     echo "Logged at $TIMESTAMP: CPU=${CPU_USAGE}, Memory=${MEMORY_USAGE}, Anomalies=${MEMORY_ANOMALIES}, Errors=${ERROR_LOGS}, Access Patterns=${MEMORY_ACCESS_PATTERNS}, PID=${CURRENT_PID}, Outcome=${ATTACK_OUTCOME}"
 
-    sleep 2  # Adjust polling frequency to avoid excessive repetition
+    sleep 0.5  # Reduced polling frequency for faster logging
 done
