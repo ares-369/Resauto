@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Output CSV file
 CSV_FILE="cheri_memory_anomalies.csv"
@@ -10,22 +10,19 @@ fi
 
 # Function to get CPU usage
 get_cpu_usage() {
-    # Get CPU usage percentage from top command (1 second average)
-    CPU_USAGE=$(top -bn2 | grep "Cpu(s)" | tail -n 1 | awk '{print $2 + $4}')
+    CPU_USAGE=$(top -d1 | grep "CPU:" | awk '{print $2}' | head -n1)
     echo "$CPU_USAGE"
 }
 
 # Function to get memory usage
 get_memory_usage() {
-    # Get used memory in MB from free command
-    MEMORY_USAGE=$(free -m | awk '/^Mem:/ {print $3}')
+    MEMORY_USAGE=$(vmstat -h | awk '/Pages active/ {print $3}' | head -n1)
     echo "$MEMORY_USAGE"
 }
 
 # Function to detect memory anomalies
 detect_memory_access_anomalies() {
-    # Check dmesg logs for CHERI capability faults
-    ANOMALIES=$(dmesg | grep "capability fault" | tail -n 1)
+    ANOMALIES=$(dmesg | grep -i "capability fault" | tail -n 1)
     if [[ -z "$ANOMALIES" ]]; then
         echo "No anomalies detected"
     else
@@ -35,7 +32,6 @@ detect_memory_access_anomalies() {
 
 # Function to fetch error logs
 get_error_logs() {
-    # Fetch the last log line from dmesg
     ERROR_LOG=$(dmesg | tail -n 1)
     if [[ -z "$ERROR_LOG" ]]; then
         echo "No errors detected"
